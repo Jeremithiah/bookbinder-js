@@ -18,13 +18,23 @@ export function handleInputChange(book, bookbinderForm) {
   if (book.inputpdf) {
     updateRenderedForm(book);
   }
+  // Note: pageEditor state persists during setting changes
 }
 
-export function handleFileChange(e, book) {
+export async function handleFileChange(e, book, pageEditor) {
   clearPreview();
   const fileList = e.target.files;
   if (fileList.length > 0) {
-    const updated = book.openpdf(fileList[0]);
-    updated.then(() => updateRenderedForm(book));
+    const file = fileList[0];
+
+    // Load PDF into book
+    const updated = book.openpdf(file);
+    await updated;
+
+    // Initialize page editor with the same file
+    await pageEditor.init(file);
+
+    // Update rendered form
+    updateRenderedForm(book);
   }
 }

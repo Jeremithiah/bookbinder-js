@@ -75,6 +75,9 @@ export class Book {
     this.filelist = []; //  list of ouput filenames and path
     this.zip = null;
 
+    /** @type {Array|null} Custom page order from PageEditor */
+    this.customPageOrder = null;
+
     this.update(configuration);
   }
 
@@ -131,6 +134,21 @@ export class Book {
   }
 
   /**
+   * Set custom page order from PageEditor
+   * @param {Array} customOrder - Array of page objects from PageEditor
+   */
+  setCustomPageOrder(customOrder) {
+    this.customPageOrder = customOrder;
+  }
+
+  /**
+   * Clear custom page order
+   */
+  clearCustomPageOrder() {
+    this.customPageOrder = null;
+  }
+
+  /**
    * Populates [this.currentdoc] from user's file system
    * @param {File} file input file
    */
@@ -168,15 +186,32 @@ export class Book {
    * Populates [this.orderedpages] (array [0, 1, ... this.page_sheets * # of sheets])
    */
   createpagelist() {
-    this.pagecount = this.currentdoc.getPageCount();
-    this.orderedpages = Array.from({ length: this.pagecount }, (x, i) => i);
+    // If custom page order exists, use it instead of default ordering
+    if (this.customPageOrder && this.customPageOrder.length > 0) {
+      // Custom order: map editor pages to orderedpages format
+      // Editor pages can be: { type: 'source', index: N } or { type: 'text', content: '...' }
+      // We'll keep them as-is for now and handle in createpages()
+      this.orderedpages = this.customPageOrder.map(page => {
+        if (page.type === 'source') {
+          return page.index; // 0-based index for pdf-lib
+        } else {
+          return page; // Keep text page object for later processing
+        }
+      });
 
-    for (let i = 0; i < this.flyleafs; i++) {
-      this.orderedpages.unshift('b');
-      this.orderedpages.unshift('b');
+      this.pagecount = this.customPageOrder.filter(p => p.type === 'source').length;
+    } else {
+      // Default ordering: sequential pages + flyleafs
+      this.pagecount = this.currentdoc.getPageCount();
+      this.orderedpages = Array.from({ length: this.pagecount }, (x, i) => i);
 
-      this.orderedpages.push('b');
-      this.orderedpages.push('b');
+      for (let i = 0; i < this.flyleafs; i++) {
+        this.orderedpages.unshift('b');
+        this.orderedpages.unshift('b');
+
+        this.orderedpages.push('b');
+        this.orderedpages.push('b');
+      }
     }
 
     //      padding calculations if needed
@@ -205,43 +240,148 @@ export class Book {
     let pages;
     [this.managedDoc, pages] = await embedPagesInNewPdf(this.currentdoc);
 
+    // Get reference dimensions from first page for text pages
+    const firstPage = pages[0];
+    const referenceWidth = firstPage.width;
+    const referenceHeight = firstPage.height;
+
     const isNone = this.source_rotation == 'none';
     const is90cw = this.source_rotation == '90cw';
     const is90ccw = this.source_rotation == '90ccw';
     const isInBinding = this.source_rotation == 'in_binding';
     const isOutBinding = this.source_rotation == 'out_binding';
-    for (var i = 0; i < pages.length; ++i) {
-      const page = pages[i];
-      const newPage = this.managedDoc.addPage();
-      if (isNone) {
-        newPage.setSize(page.width, page.height);
-        newPage.drawPage(page);
-      } else {
-        const isEvenPage = i % 2 == 0;
-        var rotate90cw = is90cw || (isOutBinding && isEvenPage) || (isInBinding && !isEvenPage);
-        var rotate90ccw = is90ccw || (isOutBinding && !isEvenPage) || (isInBinding && isEvenPage);
-        if (rotate90ccw) {
-          newPage.setSize(page.height, page.width);
-          newPage.drawPage(page, {
-            x: page.height,
-            y: 0,
-            rotate: degrees(90),
+
+    // If custom page order exists, rebuild managedDoc with custom order
+    if (this.customPageOrder && this.customPageOrder.length > 0) {
+      // Clear managedDoc and rebuild with custom order
+      this.managedDoc = await PDFDocument.create();
+
+      for (const orderItem of this.orderedpages) {
+        if (typeof orderItem === 'number') {
+          // Source page - copy from original
+          const sourcePage = pages[orderItem];
+          const newPage = this.managedDoc.addPage();
+
+          if (isNone) {
+            newPage.setSize(sourcePage.width, sourcePage.height);
+            newPage.drawPage(sourcePage);
+          } else {
+            const isEvenPage = orderItem % 2 == 0;
+            const shouldRotate90cw = is90cw || (isOutBinding && isEvenPage) || (isInBinding && !isEvenPage);
+            const shouldRotate90ccw = is90ccw || (isOutBinding && !isEvenPage) || (isInBinding && isEvenPage);
+            if (shouldRotate90ccw) {
+              newPage.setSize(sourcePage.height, sourcePage.width);
+              newPage.drawPage(sourcePage, {
+                x: sourcePage.height,
+                y: 0,
+                rotate: degrees(90),
+              });
+            } else if (shouldRotate90cw) {
+              newPage.setSize(sourcePage.height, sourcePage.width);
+              newPage.drawPage(sourcePage, {
+                x: 0,
+                y: sourcePage.width,
+                rotate: degrees(-90),
+              });
+            }
+          }
+          this.cropbox = newPage.getCropBox();
+        } else if (orderItem === 'b') {
+          // Blank page (padding)
+          const blankPage = this.managedDoc.addPage([referenceWidth, referenceHeight]);
+          blankPage.drawLine({
+            start: { x: 25, y: 26 },
+            end: { x: 125, y: 126 },
+            opacity: 0.0,
           });
-        } else if (rotate90cw) {
-          newPage.setSize(page.height, page.width);
-          newPage.drawPage(page, {
-            x: 0,
-            y: page.width,
-            rotate: degrees(-90),
-          });
-        } else {
-          var e = new Error("??? what sorta' layout you think you're going to get?");
-          console.error(e);
-          throw e;
+        } else if (typeof orderItem === 'object' && orderItem.type === 'text') {
+          // Text page - create new page with text content
+          const textPage = this.managedDoc.addPage([referenceWidth, referenceHeight]);
+
+          // Draw text content
+          if (orderItem.content) {
+            const fontSize = 12;
+            const margin = 50;
+            const lineHeight = fontSize * 1.2;
+
+            try {
+              // Split content into lines
+              const lines = orderItem.content.split('\n');
+
+              // Draw each line
+              let y = referenceHeight - margin;
+              for (const line of lines) {
+                if (y < margin) break; // Stop if we run out of space
+
+                textPage.drawText(line, {
+                  x: margin,
+                  y: y,
+                  size: fontSize,
+                });
+
+                y -= lineHeight;
+              }
+            } catch (error) {
+              console.error('Error drawing text page:', error);
+              // Draw error message instead
+              textPage.drawText('Error rendering text', {
+                x: margin,
+                y: referenceHeight / 2,
+                size: fontSize,
+              });
+            }
+          } else {
+            // Empty text page - just make it blank
+            textPage.drawLine({
+              start: { x: 25, y: 26 },
+              end: { x: 125, y: 126 },
+              opacity: 0.0,
+            });
+          }
+
+          this.cropbox = textPage.getCropBox();
         }
       }
-      page.embed();
-      this.cropbox = newPage.getCropBox();
+
+      // Embed all pages
+      for (const page of pages) {
+        page.embed();
+      }
+    } else {
+      // Default behavior: process pages sequentially
+      for (var i = 0; i < pages.length; ++i) {
+        const page = pages[i];
+        const newPage = this.managedDoc.addPage();
+        if (isNone) {
+          newPage.setSize(page.width, page.height);
+          newPage.drawPage(page);
+        } else {
+          const isEvenPage = i % 2 == 0;
+          var rotate90cw = is90cw || (isOutBinding && isEvenPage) || (isInBinding && !isEvenPage);
+          var rotate90ccw = is90ccw || (isOutBinding && !isEvenPage) || (isInBinding && isEvenPage);
+          if (rotate90ccw) {
+            newPage.setSize(page.height, page.width);
+            newPage.drawPage(page, {
+              x: page.height,
+              y: 0,
+              rotate: degrees(90),
+            });
+          } else if (rotate90cw) {
+            newPage.setSize(page.height, page.width);
+            newPage.drawPage(page, {
+              x: 0,
+              y: page.width,
+              rotate: degrees(-90),
+            });
+          } else {
+            var e = new Error("??? what sorta' layout you think you're going to get?");
+            console.error(e);
+            throw e;
+          }
+        }
+        page.embed();
+        this.cropbox = newPage.getCropBox();
+      }
     }
 
     switch (this.format) {

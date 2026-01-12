@@ -1,0 +1,45 @@
+<section class="section" id="page-editor" style="display: none;">
+  <header><h2>Page Editor</h2></header>
+
+  <p class="flash info">
+    Arrange your pages visually before generating the book. Drag to reorder, add custom text pages, or remove unwanted pages.
+  </p>
+
+  <!-- Toolbar -->
+  <div class="editor-toolbar">
+    <div class="editor-controls">
+      <button type="button" id="editor-add-text-page" class="btn-secondary">
+        ➕ Add Text Page
+      </button>
+
+      <div class="editor-view-toggle">
+        <label>
+          <input type="radio" name="editor-view" value="grid" checked>
+          Grid View
+        </label>
+        <label>
+          <input type="radio" name="editor-view" value="spread">
+          Spread View
+        </label>
+      </div>
+
+      <button type="button" id="editor-reset" class="btn-secondary">
+        🔄 Reset Order
+      </button>
+    </div>
+
+    <div class="editor-stats">
+      <span id="editor-page-count">0 pages</span>
+    </div>
+  </div>
+
+  <!-- View Area -->
+  <div id="editor-view-container">
+    <div id="page-grid" class="editor-grid-view"></div>
+  </div>
+
+  <!-- Loading State -->
+  <div id="editor-loading" style="display: none;">
+    <p>Loading pages...</p>
+  </div>
+</section>

@@ -8,4 +8,11 @@ export default defineConfig({
     environment: 'jsdom',
   },
   plugins: [version(), injectHTML()],
+  optimizeDeps: {
+    // Exclude pdfjs-dist from optimization to prevent worker issues
+    exclude: ['pdfjs-dist']
+  },
+  worker: {
+    format: 'es', // Use ES modules for workers
+  },
 });

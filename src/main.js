@@ -3,6 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import { Book } from './book.js';
+import { PageEditor } from './editor.js';
 import { loadForm } from './utils/formUtils.js';
 import { handleFileChange, handleInputChange } from './utils/changeHandlers.js';
 import {
@@ -34,17 +35,20 @@ window.addEventListener('DOMContentLoaded', () => {
   // spin up a book to pass to listeners
   const book = new Book(configuration);
 
+  // create page editor instance
+  const pageEditor = new PageEditor();
+
   // add event listeners to grabbed elements
   inputs.forEach((input) => {
     input.addEventListener('change', () => handleInputChange(book, bookbinderForm));
   });
   fileInput.addEventListener('change', (e) => {
-    handleFileChange(e, book);
+    handleFileChange(e, book, pageEditor);
     generate.removeAttribute('disabled');
     preview.removeAttribute('disabled');
   });
-  generate.addEventListener('click', () => handleGenerateClick(generate, book));
-  preview.addEventListener('click', () => handlePreviewClick(preview, book));
+  generate.addEventListener('click', () => handleGenerateClick(generate, book, pageEditor));
+  preview.addEventListener('click', () => handlePreviewClick(preview, book, pageEditor));
   resetSettings.addEventListener('click', () => {
     console.log('Resetting settings...');
     handleResetSettingsClick(book);
