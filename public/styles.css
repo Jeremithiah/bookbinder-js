@@ -84,3 +84,240 @@ section label {
   display: inline-block;
   vertical-align: top;
 }
+
+/* ==================== Page Editor Styles ==================== */
+
+/* Toolbar */
+.editor-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: #f5f5f5;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.editor-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.editor-view-toggle {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.editor-view-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background: white;
+  border: 1px solid #ddd;
+  transition: all 0.2s;
+}
+
+.editor-view-toggle input[type="radio"] {
+  margin: 0;
+}
+
+.editor-view-toggle label:has(input:checked) {
+  background: #4CAF50;
+  color: white;
+  border-color: #4CAF50;
+}
+
+.editor-stats {
+  font-weight: bold;
+  color: #333;
+}
+
+.btn-secondary {
+  padding: 0.5rem 1rem;
+  background: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.btn-secondary:hover {
+  background: #1976D2;
+}
+
+/* Grid View */
+.editor-grid-view {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+  background: #fafafa;
+  border-radius: 4px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+/* Spread View */
+.editor-spread-view {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 1rem;
+  background: #fafafa;
+  border-radius: 4px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.spread-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Page Items */
+.page-item {
+  position: relative;
+  background: white;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  padding: 0.5rem;
+  cursor: move;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.page-item:hover {
+  border-color: #2196F3;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+}
+
+.page-label {
+  font-size: 12px;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  text-align: center;
+  color: #333;
+}
+
+.page-canvas {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid #eee;
+  border-radius: 2px;
+}
+
+/* Placeholder */
+.page-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f0f0;
+  border: 2px dashed #ccc;
+  border-radius: 4px;
+  min-height: 200px;
+  color: #999;
+  font-style: italic;
+}
+
+/* Delete/Edit buttons */
+.page-delete-btn,
+.page-edit-btn {
+  position: absolute;
+  top: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.page-delete-btn {
+  right: 4px;
+  background: #f44336;
+  color: white;
+}
+
+.page-delete-btn:hover {
+  background: #d32f2f;
+  transform: scale(1.1);
+}
+
+.page-edit-btn {
+  right: 32px;
+  background: #FF9800;
+  color: white;
+}
+
+.page-edit-btn:hover {
+  background: #F57C00;
+  transform: scale(1.1);
+}
+
+/* Drag states */
+.page-ghost {
+  opacity: 0.5;
+  background: #e3f2fd;
+}
+
+.page-drag {
+  opacity: 0.8;
+  cursor: grabbing;
+}
+
+/* Loading state */
+#editor-loading {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+
+/* Spread-specific page styles */
+.spread-left,
+.spread-right {
+  min-height: 200px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .editor-grid-view {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+
+  .spread-container {
+    grid-template-columns: 1fr;
+  }
+
+  .editor-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .editor-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

@@ -9,11 +9,22 @@ import {
   updatePaperSelectOptionsUnits,
 } from './renderUtils';
 
-export function handleGenerateClick(generateEl, book) {
+export function handleGenerateClick(generateEl, book, pageEditor) {
   generateEl.setAttribute('disabled', true);
   generateEl.style.fontSize = '13px';
   generateEl.innerText = 'Generating, this may take a little while...';
   console.log('The whole Book model:', book);
+
+  // Apply custom page order from editor if it's been modified
+  if (pageEditor && pageEditor.isModified()) {
+    const customOrder = pageEditor.getCustomPageOrder();
+    book.setCustomPageOrder(customOrder);
+    console.log('Using custom page order from editor:', customOrder);
+  } else {
+    // Clear any previous custom order
+    book.clearCustomPageOrder();
+  }
+
   const result = book.createoutputfiles(false);
   result
     .then(() => {
@@ -29,10 +40,21 @@ export function handleGenerateClick(generateEl, book) {
     });
 }
 
-export function handlePreviewClick(previewEl, book) {
+export function handlePreviewClick(previewEl, book, pageEditor) {
   previewEl.setAttribute('disabled', true);
   previewEl.innerText = 'Generating Preview...';
   clearPreview();
+
+  // Apply custom page order from editor if it's been modified
+  if (pageEditor && pageEditor.isModified()) {
+    const customOrder = pageEditor.getCustomPageOrder();
+    book.setCustomPageOrder(customOrder);
+    console.log('Using custom page order from editor:', customOrder);
+  } else {
+    // Clear any previous custom order
+    book.clearCustomPageOrder();
+  }
+
   const result = book.createoutputfiles(true);
   result
     .then(() => {
